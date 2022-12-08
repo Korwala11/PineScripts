@@ -1,0 +1,95 @@
+//@version=3
+study(title="EMA6_5MA + Hull MA", shorttitle="EMA6 + Hull MA", overlay=true)
+len1 = input(9, minval=1, title="EMA 1")
+len2 = input(21, minval=1, title="EMA 2")
+len3 = input(50, minval=1, title="EMA 3")
+len4 = input(100, minval=1, title="EMA 4")
+len5 = input(200, minval=1, title="EMA 5")
+len6 = input(365, minval=1, title="EMA 6")
+
+src1 = input(close, title="EMA 1 Source")
+src2 = input(close, title="EMA 2 Source")
+src3 = input(close, title="EMA 3 Source")
+src4 = input(close, title="EMA 4 Source")
+src5 = input(close, title="EMA 5 Source")
+src6 = input(close, title="EMA 6 Source")
+
+
+ema1 = ema(src1, len1)
+ema2 = ema(src2, len2)
+ema3 = ema(src3, len3)
+ema4 = ema(src4, len4)
+ema5 = ema(src5, len5)
+ema6 = ema(src6, len6)
+
+
+plot(ema1, color=green, linewidth=2, title="EMA 1")
+plot(ema2, color=red, linewidth=2, title="EMA 2")
+plot(ema3, color=green, linewidth=2, title="EMA 3")
+plot(ema4, color=red, linewidth=2, title="EMA 4")
+plot(ema5, color=yellow, linewidth=2, title="EMA 5")
+plot(ema6, color=purple, linewidth=2, title="EMA 6")
+
+//inputs
+n=input(title="MA period",type=integer,defval=9)                                                                                                //period
+el = input(true, title="Show 1st MA - entry line")                                                                                              //show 1nd HMA entry line
+trl = input(false, title="Show 2nd MA - trendline")                                                                                             //show 2nd HMA trendline
+pld = input(true, title="Show Downtrend - red line")                                                                                            //Show Downtrend
+plu = input(true, title="Show Uptrend - green line")                                                                                            //Show Uptrend                  
+plr = input(true, title="Show Reversing trend - yellow line")                                                                                   //Show trend change
+plb = input(true, title="Show Line background - black line")                                                                                    //Show Line background
+pla = input(false, title="Show buy/sell arrows")                                                                                                //Show buy/sell arrows
+useCurrentRes = input(false, title="Use Current Chart Resolution for 2nd MA")                                                                   //use custom resolution
+resCustom = input(title="Timeframe for 2nd MA, Standart - 4h", type=resolution, defval="240")                                                   //resolution for 2nd HMA
+res = useCurrentRes ? period : resCustom
+
+//functions
+n2ma=2*wma(close,round(n/2))
+nma=wma(close,n)
+diff=n2ma-nma
+sqn=round(sqrt(n))
+n2ma1=2*wma(close[1],round(n/2))
+nma1=wma(close[1],n)
+diff1=n2ma1-nma1
+sqn1=round(sqrt(n))
+n1=wma(diff,sqn)    
+n2=wma(diff1,sqn)
+n3=n1-(n1*-1)
+n4=n1+(n1)
+
+//colors
+dif = n1[1]-n3
+dif1 = dif>dif[1] and dif[1]>dif[2] ? na: lime //uptrend - green
+dif3 = n4-n1[1]
+dif2 = dif3>dif3[1] and dif3[1]>dif3[2] ? na: red  //downtrend - red
+dif4 = (dif>dif[1] and dif[1]>dif[2]) == (dif3>dif3[1] and dif3[1]>dif3[2]) ? yellow: na //trend change - yellow
+c = n1 > n2 ? lime : red //fill red/lime
+
+//periods
+outn1 = security(tickerid, res, n1) //MA custom res
+outc = security(tickerid, res, c) //fill red/lime custom res
+outdif = security(tickerid, res, dif)
+outdif1 = security(tickerid, res, dif1) //uptrend green custom res
+outdif2 = security(tickerid, res, dif2) //downtrend red custom res
+outdif3 = security(tickerid, res, dif3)
+outdif4 = security(tickerid, res, dif4) //trend change yellow custom res
+
+//plots - 2nd line
+sma=plot(trl and outn1 ? outn1 : na, color=outdif1, linewidth=25, transp=80) //2nd green
+sma2=plot(trl and outn1 ? outn1 : na, color=outdif2, linewidth=25, transp=80) //2nd red
+sma3=plot(trl and outn1 ? outn1 : na, color=outdif4, linewidth=25, transp=90) //2nd yellow
+
+//plots - 1st line
+mab=plot(el and n1 and plb ? n1 : na,color=black, linewidth=4, transp=0, title = 'Background line') //black
+ma=plot(el and n1 and plu? n1 : na,color=dif1, linewidth=2, transp=10) //green
+ma2=plot(el and n1 and pld? n1 : na,color=dif2, linewidth=2, transp=20)//red
+ma3=plot(el and n1 and plr? n1 : na,color=dif4, linewidth=2, transp=10) //yellow
+
+long = dif<dif[1] and dif[1]>=dif[2] //long condition
+short = dif3<dif3[1] and dif3[1]>=dif3[2]//short condition
+
+//plots - arrows and alerts
+longarrow = long == 1? 1: na
+shortarrow = short == 1? -1: na
+plotarrow(pla and longarrow ? longarrow :na, colorup = aqua, transp = 50)
+plotarrow(pla and shortarrow ? shortarrow :na, colordown = red, transp = 50)
